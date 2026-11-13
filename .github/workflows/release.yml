@@ -31,6 +31,9 @@ jobs:
     env:
       GH_REPO: ${{ github.repository }}
     steps:
+      - name: Checkout release metadata
+        uses: actions/checkout@v4
+
       - name: Fetch the live artifacts from edel.chat
         run: |
           set -euo pipefail
@@ -46,14 +49,28 @@ jobs:
           curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/apk/file -o assets/EdelWorld.apk
           curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/download/edeldrive -o assets/EdelDrive-setup.exe
           curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/download/edelsatellite -o assets/EdelDesktop-setup.exe
-          cp assets/EdelWorld.apk "assets/EdelWorld-${APK_VER}.apk"
-          cp assets/EdelDrive-setup.exe "assets/EdelDrive-setup-${DRIVE_VER}.exe"
-          cp assets/EdelDesktop-setup.exe "assets/EdelDesktop-${DESKTOP_VER}-setup.exe"
+          LABEL=""
+          if [ "${{ github.event_name }}" = "push" ] && [ -f .release-label ]; then
+            LABEL=$(tr -d '\r\n' < .release-label)
+          fi
+          if [ -z "$LABEL" ]; then
+            LABEL="$APK_VER"
+          fi
+          SUFFIX=""
+          case "$LABEL" in
+            *_dev_*) SUFFIX="_dev_${LABEL##*_dev_}" ;;
+          esac
+          DESKTOP_LABEL="${DESKTOP_VER}${SUFFIX}"
+          cp assets/EdelWorld.apk "assets/EdelWorld-${LABEL}.apk"
+          cp assets/EdelDrive-setup.exe "assets/EdelDrive-setup-${LABEL}.exe"
+          cp assets/EdelDesktop-setup.exe "assets/EdelDesktop-${DESKTOP_LABEL}-setup.exe"
           (cd assets && sha256sum EdelWorld.apk EdelDrive-setup.exe EdelDesktop-setup.exe > SHA256SUMS.txt)
           {
             echo "APK_VER=$APK_VER"
             echo "DRIVE_VER=$DRIVE_VER"
             echo "DESKTOP_VER=$DESKTOP_VER"
+            echo "LABEL=$LABEL"
+            echo "DESKTOP_LABEL=$DESKTOP_LABEL"
           } >> "$GITHUB_ENV"
           ls -lh assets
 
@@ -64,7 +81,11 @@ jobs:
           FORCE: ${{ inputs.force }}
         run: |
           set -euo pipefail
-          WANT="EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
+          if [ "${{ github.event_name }}" = "push" ]; then
+            WANT="Build ${LABEL}; EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
+          else
+            WANT="EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
+          fi
           if [ "$FORCE" = "true" ]; then
             echo "Force requested"
             echo "skip=false" >> "$GITHUB_OUTPUT"
@@ -99,7 +120,7 @@ jobs:
           set -euo pipefail
           NOTES=$(mktemp)
           {
-            echo "EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
+            echo "Build ${LABEL}; EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
             echo
             echo "| Asset | Version | SHA-256 |"
             echo "|---|---|---|"
@@ -115,12 +136,13 @@ jobs:
             echo "Website: https://edel.chat"
             echo "Verify: https://edel.chat/verification.html"
           } > "$NOTES"
-          gh release create latest assets/* --title "Edel World latest" --notes-file "$NOTES" --latest
+          gh release create latest assets/* --title "Edel World latest (${LABEL})" --notes-file "$NOTES" --latest
 
       - name: Summary
         run: |
           {
             echo "### Edel World release"
             echo "- https://github.com/${GH_REPO}/releases/latest"
+            echo "- Build ${LABEL}"
             echo "- EdelWorld ${APK_VER}, EdelDrive ${DRIVE_VER}, EdelDesktop ${DESKTOP_VER}"
           } >> "$GITHUB_STEP_SUMMARY"
