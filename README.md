@@ -40,12 +40,24 @@ Ed25519 + X25519 + XChaCha20-Poly1305, Argon2id for the master password, and a s
 
 The project does not claim what it cannot prove: there is no external audit, no public source repository, and no bug bounty. Known limits are listed honestly in [`audit.md`](https://edel.chat/verification.html).
 
+## Buy access and invitations
+
+Access is paid and invite-only. Packages are one-time purchases, not a subscription.
+
+- **Buy access:** [edel.chat/#access](https://edel.chat/#access)
+- **Buy invitations:** [edel.chat/#access](https://edel.chat/#access)
+
+Payment is accepted in USDC or USDT on Base. The exact packages and live prices are shown on the website.
+
 ## Links
 
 - Website — [edel.chat](https://edel.chat)
 - Verify — [edel.chat/verification.html](https://edel.chat/verification.html)
 - About — [edel.chat/about.html](https://edel.chat/about.html)
-- Security contact — [security@edel.chat](mailto:security@edel.chat)
+
+## Contact
+
+**Contact   EDEL CHAT : ed1qx3808gg2jy2z2dndd7cutanfejm6sq2fq0zzzc3**
 
 ## Status
 
