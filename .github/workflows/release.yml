@@ -1,0 +1,126 @@
+name: publish-release
+
+# One rolling "latest" release: every run deletes the old releases and publishes
+# the current live artifacts from edel.chat. The website links to
+# /releases/latest/download/<stable-name>, so the asset names must not change.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Republish even if the live versions are unchanged
+        type: boolean
+        default: false
+  push:
+    branches: [main]
+    paths:
+      - .release-trigger
+      - .github/workflows/release.yml
+  schedule:
+    - cron: '17 3 * * *'
+
+permissions:
+  contents: write
+
+concurrency:
+  group: publish-release
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      GH_REPO: ${{ github.repository }}
+    steps:
+      - name: Fetch the live artifacts from edel.chat
+        run: |
+          set -euo pipefail
+          mkdir -p assets
+          curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/apk/version -o apk.json
+          curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/download/version -o downloads.json
+          APK_VER=$(jq -r '.version' apk.json)
+          DRIVE_VER=$(jq -r '.downloads.edeldrive.version' downloads.json)
+          DESKTOP_VER=$(jq -r '.downloads.edelsatellite.version' downloads.json)
+          for v in "$APK_VER" "$DRIVE_VER" "$DESKTOP_VER"; do
+            test -n "$v" && test "$v" != "null"
+          done
+          curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/apk/file -o assets/EdelWorld.apk
+          curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/download/edeldrive -o assets/EdelDrive-setup.exe
+          curl -fsSL --retry 4 --retry-delay 5 https://edel.chat/api/download/edelsatellite -o assets/EdelDesktop-setup.exe
+          cp assets/EdelWorld.apk "assets/EdelWorld-${APK_VER}.apk"
+          cp assets/EdelDrive-setup.exe "assets/EdelDrive-setup-${DRIVE_VER}.exe"
+          cp assets/EdelDesktop-setup.exe "assets/EdelDesktop-${DESKTOP_VER}-setup.exe"
+          (cd assets && sha256sum EdelWorld.apk EdelDrive-setup.exe EdelDesktop-setup.exe > SHA256SUMS.txt)
+          {
+            echo "APK_VER=$APK_VER"
+            echo "DRIVE_VER=$DRIVE_VER"
+            echo "DESKTOP_VER=$DESKTOP_VER"
+          } >> "$GITHUB_ENV"
+          ls -lh assets
+
+      - name: Check whether the release is already current
+        id: current
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          set -euo pipefail
+          WANT="EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
+          if [ "$FORCE" = "true" ]; then
+            echo "Force requested"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          BODY=$(gh release view latest --json body --jq .body 2>/dev/null || true)
+          if printf '%s' "$BODY" | grep -qF "$WANT"; then
+            echo "Release is already current: $WANT"
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "Publishing: $WANT"
+            echo "skip=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Delete old releases
+        if: steps.current.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          gh release list --limit 100 --json tagName --jq '.[].tagName' | while read -r tag; do
+            [ -n "$tag" ] || continue
+            echo "Deleting release and tag: $tag"
+            gh release delete "$tag" --yes --cleanup-tag || true
+          done
+
+      - name: Publish the latest release
+        if: steps.current.outputs.skip != 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          NOTES=$(mktemp)
+          {
+            echo "EdelWorld ${APK_VER}; EdelDrive ${DRIVE_VER}; EdelDesktop ${DESKTOP_VER}"
+            echo
+            echo "| Asset | Version | SHA-256 |"
+            echo "|---|---|---|"
+            echo "| EdelWorld.apk | ${APK_VER} | $(sha256sum assets/EdelWorld.apk | awk '{print $1}') |"
+            echo "| EdelDrive-setup.exe | ${DRIVE_VER} | $(sha256sum assets/EdelDrive-setup.exe | awk '{print $1}') |"
+            echo "| EdelDesktop-setup.exe | ${DESKTOP_VER} | $(sha256sum assets/EdelDesktop-setup.exe | awk '{print $1}') |"
+            echo
+            echo "Stable download URLs:"
+            echo "- https://github.com/${GH_REPO}/releases/latest/download/EdelWorld.apk"
+            echo "- https://github.com/${GH_REPO}/releases/latest/download/EdelDrive-setup.exe"
+            echo "- https://github.com/${GH_REPO}/releases/latest/download/EdelDesktop-setup.exe"
+            echo
+            echo "Website: https://edel.chat"
+            echo "Verify: https://edel.chat/verification.html"
+          } > "$NOTES"
+          gh release create latest assets/* --title "Edel World latest" --notes-file "$NOTES" --latest
+
+      - name: Summary
+        run: |
+          {
+            echo "### Edel World release"
+            echo "- https://github.com/${GH_REPO}/releases/latest"
+            echo "- EdelWorld ${APK_VER}, EdelDrive ${DRIVE_VER}, EdelDesktop ${DESKTOP_VER}"
+          } >> "$GITHUB_STEP_SUMMARY"
