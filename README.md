@@ -2,7 +2,7 @@
 
 Private, invite-only communication in one place: **end-to-end encrypted chat**, an **encrypted drive**, and **remote access to your own PC**. One account and one key ring across three surfaces: **Edel Chat**, **Edel Drive**, and **Edel Desktop**.
 
-**Website: [edel.chat](https://edel.chat)**
+**Website: [edel.world](https://edel.world)**
 
 The server relays opaque envelopes and opaque blobs; it never holds your private keys and cannot read messages, file names, or file contents. Offline messages are deleted after the recipient confirms delivery.
 
@@ -16,7 +16,7 @@ Every release is published here, in **[Releases](https://github.com/edelworld/ed
 | **Edel Drive** | Windows 10/11 | [EdelDrive-setup.exe](https://github.com/edelworld/edelworld/releases/latest/download/EdelDrive-setup.exe) |
 | **Edel Desktop** | Windows 10/11 | [EdelDesktop-setup.exe](https://github.com/edelworld/edelworld/releases/latest/download/EdelDesktop-setup.exe) |
 
-Release notes list the exact version and SHA-256 of every asset. The same metadata is available at [`https://edel.chat/api/download/version`](https://edel.chat/api/download/version) (Drive/Desktop) and [`https://edel.chat/api/apk/version`](https://edel.chat/api/apk/version) (Android).
+Release notes list the exact version and SHA-256 of every asset. The same metadata is available at [`https://edel.world/api/download/version`](https://edel.world/api/download/version) (Drive/Desktop) and [`https://edel.world/api/apk/version`](https://edel.world/api/apk/version) (Android).
 
 ## Surfaces
 
@@ -28,32 +28,32 @@ There is **no iOS app and none is planned**. iPhone users stay in Safari with th
 
 ## Verifiability
 
-- Signed web manifest: [`/manifest.json`](https://edel.chat/manifest.json) and [`/manifest.sig`](https://edel.chat/manifest.sig).
-- APK version, size, and SHA-256: [`/api/apk/version`](https://edel.chat/api/apk/version).
-- Installer version, size, and SHA-256: [`/api/download/version`](https://edel.chat/api/download/version).
-- Claim → artifact matrix: [edel.chat/verification.html](https://edel.chat/verification.html).
-- Server health and build: [`/api/health`](https://edel.chat/api/health).
+- Signed web manifest: [`/manifest.json`](https://edel.world/manifest.json) and [`/manifest.sig`](https://edel.world/manifest.sig).
+- APK version, size, and SHA-256: [`/api/apk/version`](https://edel.world/api/apk/version).
+- Installer version, size, and SHA-256: [`/api/download/version`](https://edel.world/api/download/version).
+- Claim → artifact matrix: [edel.world/verification.html](https://edel.world/verification.html).
+- Server health and build: [`/api/health`](https://edel.world/api/health).
 
 ## Security model (short)
 
 Ed25519 + X25519 + XChaCha20-Poly1305, Argon2id for the master password, and a signed envelope checked before decryption. The transport is HTTP long-poll with an ECDH-derived session key and a pinned server key; TLS is an optional additional layer. Double encryption (`XChaCha20-Poly1305` inside `AES-256-GCM`) is enabled in all clients.
 
-The project does not claim what it cannot prove: there is no external audit, no public source repository, and no bug bounty. Known limits are listed honestly in [`audit.md`](https://edel.chat/verification.html).
+The project does not claim what it cannot prove: there is no external audit, no public source repository, and no bug bounty. Known limits are listed honestly in [`audit.md`](https://edel.world/verification.html).
 
 ## Buy access and invitations
 
 Access is paid and invite-only. Packages are one-time purchases, not a subscription.
 
-- **Buy access:** [edel.chat/#access](https://edel.chat/#access)
-- **Buy invitations:** [edel.chat/#access](https://edel.chat/#access)
+- **Buy access:** [edel.world/#access](https://edel.world/#access)
+- **Buy invitations:** [edel.world/#access](https://edel.world/#access)
 
 Payment is accepted in USDC or USDT on Base. The exact packages and live prices are shown on the website.
 
 ## Links
 
-- Website — [edel.chat](https://edel.chat)
-- Verify — [edel.chat/verification.html](https://edel.chat/verification.html)
-- About — [edel.chat/about.html](https://edel.chat/about.html)
+- Website — [edel.world](https://edel.world)
+- Verify — [edel.world/verification.html](https://edel.world/verification.html)
+- About — [edel.world/about.html](https://edel.world/about.html)
 
 ## Contact
 
